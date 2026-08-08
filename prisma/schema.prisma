@@ -1,0 +1,32 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  email         String         @unique
+  password      String         // Хэш пароля (bcrypt)
+  name          String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  refreshTokens RefreshToken[]
+
+  @@map("users") // Хорошая практика: именовать таблицы в нижнем регистре во множественном числе
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique @db.VarChar(500) // Увеличено под стандартную длину JWT-токенов
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId]) // ИСПРАВЛЕНО: Явный индекс для ускорения JOIN-запросов по userId
+  @@map("refresh_tokens")
+}

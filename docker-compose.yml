@@ -1,0 +1,59 @@
+
+services:
+  # 1. Контейнер бэкенд-приложения (сборка из локального Dockerfile)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: auth_backend_app
+    restart: always
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=mysql://root:root@mysql_db:3306/auth_db # ИСПРАВЛЕНО: пароль root
+      - REDIS_URL=redis://valkey_cache:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - ACCESS_TOKEN_EXPIRES_IN=${ACCESS_TOKEN_EXPIRES_IN}
+      - REFRESH_TOKEN_EXPIRES_IN=${REFRESH_TOKEN_EXPIRES_IN}
+      - BCRYPT_SALT_ROUNDS=${BCRYPT_SALT_ROUNDS:-10}
+      - MAX_LOGIN_ATTEMPTS=${MAX_LOGIN_ATTEMPTS:-5}
+      - LOGIN_BLOCK_DURATION=${LOGIN_BLOCK_DURATION:-15}
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+      valkey_cache:
+        condition: service_started
+
+  # 2. Сервер базы данных MySQL
+  mysql_db:
+    image: mysql:8.0
+    container_name: auth_mysql_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root # ИСПРАВЛЕНО ПО ТЗ: пароль root вместо root_password
+      MYSQL_DATABASE: auth_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"] # ИСПРАВЛЕНО: пароль -proot
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 3. Кэш Valkey (Redis)
+  valkey_cache:
+    image: valkey/valkey:7.2
+    container_name: auth_valkey_cache
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes: # ДОБАВЛЯЕМ СЮДА ЭТОТ БЛОК С ДЕФИСОМ!
+      - valkey_data:/data
+
+volumes:
+  mysql_data:
+  valkey_data:
