@@ -1,4 +1,3 @@
-import "../express.d.ts";
 
 import { Request, Response, NextFunction } from "express";
 import { authService } from "../services"; // Наш готовый синглтон сервиса

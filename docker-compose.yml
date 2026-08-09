@@ -1,6 +1,9 @@
+version: '3.8'
 
 services:
-  # 1. Контейнер бэкенд-приложения (сборка из локального Dockerfile)
+  # =========================================================================
+  # 1. Node.js Backend Application
+  # =========================================================================
   backend:
     build:
       context: .
@@ -12,8 +15,8 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - DATABASE_URL=mysql://root:root@mysql_db:3306/auth_db # ИСПРАВЛЕНО: пароль root
-      - REDIS_URL=redis://valkey_cache:6379
+      - DATABASE_URL=mysql://${DB_USER:-root}:${DB_PASSWORD:-root}@mysql_db:3306/${DB_NAME:-auth_db}
+      - REDIS_URL=redis://valkey_cache:6379 # Возвращено точное имя переменной из вашего кода!
       - JWT_SECRET=${JWT_SECRET}
       - ACCESS_TOKEN_EXPIRES_IN=${ACCESS_TOKEN_EXPIRES_IN}
       - REFRESH_TOKEN_EXPIRES_IN=${REFRESH_TOKEN_EXPIRES_IN}
@@ -24,35 +27,40 @@ services:
       mysql_db:
         condition: service_healthy
       valkey_cache:
-        condition: service_started
+        condition: service_healthy
 
-  # 2. Сервер базы данных MySQL
+  # =========================================================================
+  # 2. Database Server (MySQL)
+  # =========================================================================
   mysql_db:
     image: mysql:8.0
     container_name: auth_mysql_db
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root # ИСПРАВЛЕНО ПО ТЗ: пароль root вместо root_password
-      MYSQL_DATABASE: auth_db
-    ports:
-      - "3306:3306"
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_NAME:-auth_db}
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"] # ИСПРАВЛЕНО: пароль -proot
+      test: ["CMD-SHELL", "mysqladmin ping -u root -p${DB_ROOT_PASSWORD:-root}"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  # 3. Кэш Valkey (Redis)
+  # =========================================================================
+  # 3. In-Memory Cache Server (Valkey / Redis)
+  # =========================================================================
   valkey_cache:
-    image: valkey/valkey:7.2
+    image: valkey/valkey:7.2-alpine
     container_name: auth_valkey_cache
     restart: always
-    ports:
-      - "6379:6379"
-    volumes: # ДОБАВЛЯЕМ СЮДА ЭТОТ БЛОК С ДЕФИСОМ!
+    volumes:
       - valkey_data:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
 volumes:
   mysql_data:

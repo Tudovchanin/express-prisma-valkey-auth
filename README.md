@@ -1,97 +1,46 @@
-# Production-Ready Auth REST API (Node.js + TypeScript)
+# Production-Ready Express + Prisma + Valkey Auth API
 
-A robust, enterprise-grade backend REST API for a user authentication system. Built with code quality, security, and scalability in mind using modern backend tooling.
-
-## 🚀 Tech Stack
-
-*   **Runtime:** Node.js (v24 Alpine)
-*   **Language:** TypeScript (Strict type-checking)
-*   **Framework:** Express.js
-*   **Database ORM:** Prisma ORM with MySQL
-*   **Caching & Session Store:** Valkey (High-performance Redis drop-in replacement)
-*   **Data Validation:** Zod
-*   **Containerization:** Docker & Docker Compose
-
-## ✨ Key Features
-
-*   **Secure Authentication:** JWT-based Access and Refresh token mechanics.
-*   **Advanced Valkey Integration:** 
-    *   Session tracking and instant token blacklisting on password changes.
-    *   IP-based global rate limiting (100 requests/min).
-    *   Brute-force protection: Blocks login attempts for 15 minutes after 5 consecutive failures.
-*   **Strict Validation:** Runtime request body sanitation via Zod schemas.
-*   **Centralized Error Handling:** Uniform and secure API error response formats.
-*   **DevOps Ready:** Multi-stage Docker setup with automated Prisma migrations.
-
-## 📂 Project Architecture
-
-The project follows a clean, modular layer-based architecture separating routing, business logic, data access, and infrastructure:
-
-```text
-src/
-├── config/          # Database, Valkey, and environment variable configs
-├── controllers/     # HTTP layer handling requests and formatting responses
-├── middleware/      # Authentication, rate limiting, and error handling filters
-├── routes/          # Express API route declarations
-├── services/        # Core business logic (auth, tokens, caching)
-├── utils/           # Shared helpers (crypto, jwt, logger)
-└── validators/      # Zod schema definitions
-```
+## 🚀 Tech Stack & Architecture
+*   **Runtime & Framework:** Node.js (v24 Alpine) + Express.js + TypeScript (Strict NodeNext)
+*   **Database & Cache:** MySQL 8.0 + Prisma ORM (Isolated client) + Valkey 7.2 (Session store)
+*   **Security:** Zod request validation + 15-min brute-force lock after 5 failures
+*   **DevOps:** Multi-stage Docker running under non-root `node` user with DB healthchecks
 
 ## 🛠️ Getting Started
 
-### Prerequisites
-
-*   Docker and Docker Compose installed.
-*   Alternatively: Node.js v24+, MySQL server, and Valkey/Redis instance installed locally.
-
-### Installation & Environment Setup
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Tudovchanin/express-prisma-valkey-auth.git
-   cd express-prisma-valkey-auth
-   ```
-
-2. Create a `.env` file based on the example configuration:
-   ```bash
-   cp .env.example .env
-   ```
-
-### Running with Docker (Recommended)
-
-The entire infrastructure (App, MySQL, Valkey) spins up automatically with a single command. Database migrations will execute dynamically on startup.
-
+### Setup
 ```bash
-docker-compose up --build
+git clone https://github.com
+cd express-prisma-valkey-auth
+cp .env.example .env
 ```
 
-The API server will be available at `http://localhost:3000`.
+### 🟢 Local Development Mode
+Enables hot-reloading, auto-generates Prisma types, and exposes ports `3306`/`6379` for GUI tools.
+```bash
+cp docker-compose.override.example.yml docker-compose.override.yml
+sudo docker compose up --build
+```
 
-### Running Locally for Development
+### 🔴 Production Mode
+Compiles TS into clean JS inside `/dist`, excludes tests, drops devDependencies, and locks DB ports.
+```bash
+sudo docker compose -f docker-compose.yml up --build -d
+```
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
+### 🧪 Running Tests
+Runs local unit tests via Jest in full isolation without requiring active Docker containers:
+```bash
+npm ci && npm run test
+```
 
-2. Spin up your local database and cache services, then apply Prisma migrations:
-   ```bash
-   npx prisma migrate dev
-   ```
-
-3. Start the development server (with hot-reloading):
-   ```bash
-   npm run dev
-   ```
-
-## 🧪 API Endpoints
+## 📋 API Endpoints
 
 | Method | Endpoint | Description | Auth Required |
 | :--- | :--- | :--- | :--- |
-| **POST** | `/api/auth/register` | Register a new user account | No |
-| **POST** | `/api/auth/login` | Authenticate user and issue tokens | No |
-| **POST** | `/api/auth/refresh` | Renew an expired Access Token using Refresh Token | No |
-| **POST** | `/api/auth/logout` | Invalidate active user tokens and session | No |
-| **GET** | `/api/auth/me` | Retrieve profile data of the current user | Yes (Bearer Token) |
-| **POST** | `/api/auth/change-password` | Update account password and revoke all active sessions | Yes (Bearer Token) |
+| **POST** | `/api/auth/register` | Register a new user account (Default CLIENT role) | No |
+| **POST** | `/api/auth/login` | Authenticate user & issue HttpOnly Refresh token | No |
+| **POST** | `/api/auth/refresh` | Renew Access JWT using active Refresh cookie | No |
+| **POST** | `/api/auth/logout` | Invalidate current session and clear tokens | No |
+| **GET** | `/api/auth/me` | Retrieve profile metadata of the current user | Yes (Bearer JWT) |
+| **POST** | `/api/auth/change-password`| Update account password & revoke all active sessions | Yes (Bearer JWT) |

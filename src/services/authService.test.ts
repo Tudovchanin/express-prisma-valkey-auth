@@ -84,7 +84,8 @@ describe("AuthService - Unit Tests", () => {
 
       // Шаг В: Проверяем результаты выполнения (expect — это утверждение "я ожидаю, что...")
       // ИСПРАВЛЕНО: Проверяем поля прямо на верхнем уровне вашего плоского объекта ответа
-      expect(result.id).toBe(1); // Я ожидаю, что id в ответе равен 1
+      expect(result.user.id).toBe(1);  // Я ожидаю, что id в ответе равен 1
+       expect(result.user.email).toBe(registerInput.email);  // почта test@example.com
       expect(result.accessToken).toBe("mock-access"); // Я ожидаю, что access токен совпадает с заглушкой
       expect(result.refreshToken).toBe("mock-refresh"); // Я ожидаю, что refresh токен совпадает с заглушкой
 
@@ -114,3 +115,14 @@ describe("AuthService - Unit Tests", () => {
     });
   });
 });
+
+
+
+
+
+
+
+
+
+
+

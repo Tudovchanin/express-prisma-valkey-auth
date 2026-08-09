@@ -1,0 +1,26 @@
+version: '3.8'
+
+# =========================================================================
+# LOCAL DEVELOPMENT OVERRIDES (TEMPLATE FOR GITHUB)
+# =========================================================================
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # Останавливаем сборку на слое разработки, чтобы были доступны devDependencies
+      target: builder
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - .:/app
+    command: npm run dev
+
+  mysql_db:
+    ports:
+      - "3306:3306" # Открывает доступ для локальных менеджеров (DBeaver/DataGrip)
+
+  valkey_cache:
+    ports:
+      - "6379:6379" # Открывает доступ для отладки кэша и сессий
