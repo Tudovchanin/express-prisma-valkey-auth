@@ -11,6 +11,7 @@ import type {
   UserWithPassword,
   LoginInput,
   ChangePasswordInput,
+  LogoutInput
 } from "../types/user";
 import type { TokenService } from "./tokenService";
 import type { ValkeyService } from "./valkeyService";
@@ -208,9 +209,11 @@ export class AuthService {
    * ВЫХОД ИЗ СИСТЕМЫ (LOGOUT)
    * Удаляет сессию пользователя из гибридного хранилища (MySQL и Valkey).
    */
-  async logout(refreshToken: string): Promise<void> {
-    // Сначала валидируем токен через TokenService (проверяем подпись JWT)
+  async logout({ refreshToken, accessToken }: LogoutInput): Promise<void> {
     this.tokenService.verifyRefresh(refreshToken);
+
+    // добавляем в черный список accessToken(если не истек)
+    await this.valkeyService.blacklistAccessToken(accessToken);
 
     //  Удаляем токен из быстрого кэша Valkey
     await this.valkeyService.deleteRefreshToken(refreshToken);
@@ -224,6 +227,7 @@ export class AuthService {
    */
   async changePassword(
     userId: number,
+    accessToken: string,
     data: ChangePasswordInput,
   ): Promise<void> {
     const { oldPassword, newPassword } = data;
@@ -241,8 +245,10 @@ export class AuthService {
       throw new AppError(400, ERROR_CODES.VALIDATION, "Неверный старый пароль");
     }
 
-    const newPasswordHash = await hashPassword(
-      newPassword);
+    const newPasswordHash = await hashPassword(newPassword);
+
+    // добавляем в черный список accessToken(если не истек)
+    await this.valkeyService.blacklistAccessToken(accessToken);
 
     // Мгновенно выкидываем пользователя со всех устройств в кэше Valkey (пайплайн)
     await this.valkeyService.invalidateAllUserSessions(userId);

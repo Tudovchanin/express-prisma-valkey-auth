@@ -1,5 +1,9 @@
-import { z } from 'zod';
-import { registerSchema, loginSchema, changePasswordSchema } from "../validators/authValidator";
+import { z } from "zod";
+import {
+  registerSchema,
+  loginSchema,
+  changePasswordSchema,
+} from "../validators/authValidator";
 
 export type UserBase = {
   id: number;
@@ -14,7 +18,10 @@ export type UserWithPassword = UserBase & {
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
-
+export type LogoutInput = {
+  refreshToken: string;
+  accessToken: string;
+};
 
 export type AuthResponse = {
   user: UserBase;

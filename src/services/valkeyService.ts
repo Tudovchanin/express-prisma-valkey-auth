@@ -1,6 +1,6 @@
+import { decode } from 'jsonwebtoken';
 import ms, { StringValue } from "ms";
 import { ENV } from "../config/env";
-
 import { valkey, KEYS } from "../config/valkey";
 
 export type ValkeyRepo = {
@@ -162,6 +162,32 @@ export class ValkeyService {
   async deleteRefreshToken(token: string): Promise<boolean> {
     return await this.repoValkey.del(KEYS.refreshToken(token));
   }
+  
+    /**
+   * ДОБАВЛЕНИЕ ACCESS-ТОКЕНА В ЧЕРНЫЙ СПИСОК
+   * Извлекает время жизни из JWT и блокирует его в Valkey ровно до момента его естественного протухания.
+   */
+  async blacklistAccessToken(token: string): Promise<void> {
+    
+      // Декодируем JWT без верификации подписи, чтобы прочитать поле `exp` (время истечения)
+      const decoded = decode(token) as { exp?: number };
+      
+      if (!decoded || !decoded.exp) return;
+
+      // Считаем, сколько секунд токену осталось жить
+      const nowInSeconds = Math.floor(Date.now() / 1000);
+      const timeLeftSeconds = decoded.exp - nowInSeconds;
+
+      //  Если токен еще валиден по времени, заносим его в черный список
+      if (timeLeftSeconds > 0) {
+        // Используем утилиту KEYS из вашего конфига, как в ТЗ: auth:blacklist:${token}
+        const key = KEYS.blacklist(token); 
+        
+        // Вызываем базовый метод setEx вашего репозитория (или напрямую set с TTL)
+        await this.repoValkey.setEx(key, "1", timeLeftSeconds);
+      
+    }
+  }
 
   /**
    * Проверяет, находится ли Access-токен в черном списке (после логаута или смены пароля).
@@ -183,7 +209,7 @@ export class ValkeyService {
     // Если активных сессий нет, сразу выходим из метода
     if (tokens.length === 0) return;
 
-    // 2. Передаем данные в пайплайн репозитория для атомарного массового удаления
+    // Передаем данные в пайплайн репозитория для атомарного массового удаления
     await this.repoValkey.invalidateAllSessionsPipeline({
       sessionKey,
       tokens,
@@ -191,3 +217,14 @@ export class ValkeyService {
   }
 
 }
+
+
+
+
+
+
+
+
+
+
+

@@ -6,7 +6,11 @@ import { authService } from "../services"; // Наш готовый синглт
 /**
  * РЕГИСТРАЦИЯ (POST /api/auth/register)
  */
-export const register = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const register = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const result = await authService.register(req.body);
 
@@ -22,7 +26,11 @@ export const register = async (req: Request, res: Response, next: NextFunction):
 /**
  * АВТОРИЗАЦИЯ (POST /api/auth/login)
  */
-export const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const login = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const result = await authService.login(req.body);
 
@@ -38,7 +46,11 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
 /**
  * ОБНОВЛЕНИЕ ТОКЕНОВ (POST /api/auth/refresh)
  */
-export const refresh = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const refresh = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const { refreshToken } = req.body;
     const result = await authService.refresh(refreshToken);
@@ -55,10 +67,16 @@ export const refresh = async (req: Request, res: Response, next: NextFunction): 
 /**
  * ВЫХОД ИЗ СИСТЕМЫ (POST /api/auth/logout)
  */
-export const logout = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const logout = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const { refreshToken } = req.body;
-    await authService.logout(refreshToken);
+     const authHeader = req.headers.authorization!;
+    const accessToken = authHeader.split(" ")[1];
+    await authService.logout({ refreshToken, accessToken });
 
     res.status(200).json({
       success: true,
@@ -72,7 +90,11 @@ export const logout = async (req: Request, res: Response, next: NextFunction): P
 /**
  * ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ (GET /api/auth/me)
  */
-export const me = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const me = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const userId = req.user!.id; // Расширенный тип Express отлично работает
     const user = await authService.getUserOrThrow(userId);
@@ -89,10 +111,18 @@ export const me = async (req: Request, res: Response, next: NextFunction): Promi
 /**
  * СМЕНА ПАРОЛЯ (POST /api/auth/change-password)
  */
-export const changePassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const changePassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const userId = req.user!.id;
-    await authService.changePassword(userId, req.body);
+
+    const authHeader = req.headers.authorization!;
+    const accessToken = authHeader.split(" ")[1];
+
+    await authService.changePassword(userId, accessToken, req.body);
 
     res.status(200).json({
       success: true,
