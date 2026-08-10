@@ -10,7 +10,7 @@
 
 ### Setup
 ```bash
-git clone https://github.com
+git clone https://github.com/Tudovchanin/express-prisma-valkey-auth.git
 cd express-prisma-valkey-auth
 cp .env.example .env
 ```
