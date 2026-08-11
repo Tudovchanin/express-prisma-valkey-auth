@@ -20,7 +20,7 @@ Enables hot-reloading, auto-generates Prisma types, and exposes ports `3306`/`63
 ```bash
 cp docker-compose.override.example.yml docker-compose.override.yml
 sudo docker compose up --build
-```
+````
 
 ### 🔴 Production Mode
 Compiles TS into clean JS inside `/dist`, excludes tests, drops devDependencies, and locks DB ports.
